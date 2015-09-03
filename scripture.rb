@@ -89,6 +89,8 @@ def get_line_data(line)
 		raise "unknown HTML tag #{$~} found"
 	end
 
+	text.chomp!
+
 	{book: 0,chapter: 0, verse: verse_num, type: '',text: text}
 
 end
@@ -144,7 +146,7 @@ def get_scripture(webpage_list_file)
 				data[:type] = line['class']
 				#章数を章が変わった時にセットする
 				if chapter_num == 0 && data[:type] == "subtitle" && data[:text] =~ /第(\d+)章/
-					chapter_num = $1
+					chapter_num = $1.to_i
 				#モルモン書と教義と聖約、高価な真珠の前書き、公式の宣言も１章から開始する
 				elsif chapter_num == 0 && data[:type] == "title" && (book_name == 'bm' || chapter_name == 'introduction' || book_name == 'od' )
 					chapter_num = 1
@@ -180,7 +182,19 @@ def get_scripture(webpage_list_file)
 					print_data data if DEBUG
 				end
 			end
+
+			# prefaceとcomprising、introの時は章数が入っていないので入れる
+			cur = -2
+			while data_arr[cur] != nil &&
+			data_arr[cur][:type] != 'verse' &&
+			data_arr[cur][:chapter] == 0 && # 書き換える必要のあるデータ
+			chapter_num != 0 # 0の時は意味ない（あとでする）
+				data_arr[cur][:chapter] = chapter_num
+				print_data data_arr[cur]
+				cur -= 1
+			end
 		end
+
 		
 		#モルモン書の前書き、公式の宣言でなければ
 		if book_name != 'bm' && book_name != 'od'
@@ -207,20 +221,32 @@ end
 #モルモン書データを取得しCSVに出力
 puts "getting 'the Book of Mormon' data from website"
 bom = get_scripture(BOM_WEBPAGE_LIST_FILE)
-puts "writing 'the Book of Mormon' data to #{BOM_OUTPUT_CSV_FILE}"
-write_scripture_csv(BOM_OUTPUT_CSV_FILE,bom) unless DEBUG
+unless DEBUG
+	puts "writing 'the Book of Mormon' data to #{BOM_OUTPUT_CSV_FILE}"
+	write_scripture_csv(BOM_OUTPUT_CSV_FILE,bom) 
+else
+	puts "This is DEBUG mode. So this program does not output csv file."
+end
 puts "Completed!"
 
 #教義と聖約データを取得しCSVに出力
 puts "getting 'Dcotorine and Covenants' data from website"
 d_c = get_scripture(D_C_WEBPAGE_LIST_FILE)
-puts "writing 'Doctorine and Covenants' data to #{D_C_OUTPUT_CSV_FILE}"
-write_scripture_csv(D_C_OUTPUT_CSV_FILE,d_c) unless DEBUG
+unless DEBUG
+	puts "writing 'Doctorine and Covenants' data to #{D_C_OUTPUT_CSV_FILE}"
+	write_scripture_csv(D_C_OUTPUT_CSV_FILE,d_c)
+else
+	puts "This is DEBUG mode. So this program does not output csv file."
+end
 puts "Completed!"
 
 #高価な真珠データを取得しCSVに出力
 puts "getting 'Pearl of Great Price' data from website"
 pog = get_scripture(POG_WEBPAGE_LIST_FILE)
-puts "writing 'Pearl of Great Price' data to #{POG_OUTPUT_CSV_FILE}"
-write_scripture_csv(POG_OUTPUT_CSV_FILE,pog) unless DEBUG
+unless DEBUG
+	puts "writing 'Pearl of Great Price' data to #{POG_OUTPUT_CSV_FILE}"
+	write_scripture_csv(POG_OUTPUT_CSV_FILE,pog) 
+else
+	puts "This is DEBUG mode. So this program does not output csv file."
+end
 puts "Completed!"
