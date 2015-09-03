@@ -3,8 +3,6 @@
 ##########################################################
 #モルモン書、教義と聖約、高価な真珠を教会のWebサイトから取り出しCSVに出力するプログラムです。
 #
-#1Ne4:33ではなぜか文章の途中に不自然な半角スペースが含まれているので手動で削除してください。
-#信仰箇条の最後にジョセフ・スミス「が」という変な文字があるので、修正する必要があります。
 #アブラハム書の模写の画像はSkipされます。
 #教義と聖約の年代順に見た目次は読みこむことができません。
 #
@@ -71,6 +69,8 @@ def get_line_data(line)
 	unless verse_num
 		#節以外は0とする
 		verse_num = 0
+	else
+		verse_num = verse_num.to_i
 	end
 	
 	#末尾の空白を削除
@@ -165,12 +165,17 @@ def get_scripture(webpage_list_file)
 					data_arr.push data
 					print_data data if DEBUG
 					data[:text] = data_lines[1]
-					data_arr.push data
-					print_data data if DEBUG
-				else
-					data_arr.push data
-					print_data data if DEBUG
 				end
+				# 信仰箇条の最後にジョセフ・スミス「が」という変な文字があるので、修正する必要がある
+				if data[:text] == "ジョセフ・スミスが"
+					data[:text] = "ジョセフ・スミス"
+				end
+				# 1Ne4:33ではなぜか文章の途中に不自然な半角スペースが含まれているので削除
+				if book_name == 'bm' && book_id == 1 && chapter_num == 4 && data[:verse] == 33
+					data[:text].gsub!(/\s/,"")
+				end
+				data_arr.push data
+				print_data data if DEBUG
 			#ListはTable要素
 			else
 				(line/".//tr").each do |tr|
@@ -190,7 +195,10 @@ def get_scripture(webpage_list_file)
 			data_arr[cur][:chapter] == 0 && # 書き換える必要のあるデータ
 			chapter_num != 0 # 0の時は意味ない（あとでする）
 				data_arr[cur][:chapter] = chapter_num
-				print_data data_arr[cur]
+				if DEBUG
+					puts "章数の修正"
+					print_data data_arr[cur]
+				end
 				cur -= 1
 			end
 		end
